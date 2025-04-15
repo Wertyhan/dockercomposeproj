@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  app:
+    container_name: my_project_app
+    build: ./
+    depends_on:
+      - db
+    command: bash -c 'while ! nc -z db 5432; do sleep 1; done; uvicorn app.main:app --host 0.0.0.0 --port 8000'
+    volumes:
+      - ./app:/src/app
+    ports:
+      - ${APP_HOST_PORT}:8000
+    restart: always
+    env_file:
+      - .env
+  db:
+    container_name: my_project_postgres
+    image: postgres
+    environment:
+      - POSTGRES_DB=database
+      - POSTGRES_USER=${POSTGRES_DB_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_DB_PASSWORD}
+    ports:
+      - ${POSTGRES_DB_HOST_PORT}:5432
+    volumes:
+      - .postgres:/var/lib/postgresql/data
+    restart: always
+  pgadmin4:
+    image: elestio/pgadmin:latest
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: postgres@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: postgres
+      PGADMIN_LISTEN_PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
